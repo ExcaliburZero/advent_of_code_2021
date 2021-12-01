@@ -3,10 +3,9 @@ use std::io::prelude::*;
 
 pub fn part_one() {
     let mut numbers = read_input();
-    //let answer = multiply_2020_addends(&mut numbers);
+    let answer = count_num_increases(&numbers);
 
-    //println!("{}", answer);
-    println!("{:?}", numbers);
+    println!("{}", answer);
 }
 
 pub fn part_two() {
@@ -28,4 +27,17 @@ fn read_input() -> Vec<i32> {
     }
 
     numbers
+}
+
+fn count_num_increases(numbers: &[i32]) -> i32 {
+    let mut prev = numbers.first().unwrap();
+    let mut num_increases = 0;
+    for num in numbers.iter() {
+        if num > prev {
+            num_increases += 1;
+        }
+        prev = num;
+    }
+
+    num_increases
 }
