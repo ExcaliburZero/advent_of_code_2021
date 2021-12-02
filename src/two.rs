@@ -10,9 +10,9 @@ pub fn part_one() {
 
 pub fn part_two() {
     let numbers = read_input();
-    //let answer = count_num_3_sum_increases(&numbers);
+    let answer = get_final_position_2(&numbers);
 
-    //println!("{}", answer);
+    println!("{}", answer.depth * answer.horizontal);
 }
 
 fn read_input() -> Vec<(String, i32)> {
@@ -51,6 +51,7 @@ impl Direction {
 struct Position {
     depth: i32,
     horizontal: i32,
+    aim: i32,
 }
 
 impl Position {
@@ -61,12 +62,24 @@ impl Position {
             Direction::Forward => self.horizontal += distance,
         }
     }
+
+    fn move_direction_2(&mut self, direction: Direction, distance: i32) {
+        match direction {
+            Direction::Up => self.aim -= distance,
+            Direction::Down => self.aim += distance,
+            Direction::Forward => {
+                self.horizontal += distance;
+                self.depth += self.aim * distance;
+            }
+        }
+    }
 }
 
 fn get_final_position(moves: &[(String, i32)]) -> Position {
     let mut position = Position {
         depth: 0,
         horizontal: 0,
+        aim: 0,
     };
 
     for m in moves.iter() {
@@ -74,6 +87,23 @@ fn get_final_position(moves: &[(String, i32)]) -> Position {
         let distance = m.1;
 
         position.move_direction(direction, distance);
+    }
+
+    position
+}
+
+fn get_final_position_2(moves: &[(String, i32)]) -> Position {
+    let mut position = Position {
+        depth: 0,
+        horizontal: 0,
+        aim: 0,
+    };
+
+    for m in moves.iter() {
+        let direction = Direction::from_str(&m.0).unwrap();
+        let distance = m.1;
+
+        position.move_direction_2(direction, distance);
     }
 
     position
