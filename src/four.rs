@@ -9,10 +9,10 @@ pub fn part_one() {
 }
 
 pub fn part_two() {
-    let numbers = read_input();
-    //let answer = get_life_support_rating(&numbers);
+    let (numbers, mut boards) = read_input();
+    let answer = find_last_winning_board(&numbers, &mut boards).unwrap();
 
-    //println!("{}", answer);
+    println!("{}", answer);
 }
 
 #[derive(Debug)]
@@ -167,4 +167,21 @@ fn find_first_winning_board(numbers: &[i32], boards: &mut [Board]) -> Option<i32
     }
 
     None
+}
+
+fn find_last_winning_board(numbers: &[i32], boards: &mut [Board]) -> Option<i32> {
+    let mut last_win_number = 0;
+    let mut won_boards: Vec<usize> = vec![];
+    for num in numbers.iter() {
+        for (i, b) in boards.iter_mut().enumerate() {
+            b.mark(*num);
+
+            if b.has_won() && !won_boards.contains(&i) {
+                last_win_number = b.sum_unmarked_nums() * num;
+                won_boards.push(i);
+            }
+        }
+    }
+
+    Some(last_win_number)
 }
