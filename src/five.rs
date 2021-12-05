@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::io;
 use std::io::prelude::*;
@@ -75,12 +76,12 @@ impl Line {
             let dir = sign(self.end.x - self.start.x);
             let y = self.start.y;
             let mut x = self.start.x;
-            while true {
+            loop {
                 let point = Point { x, y };
-                if grid.contains_key(&point) {
-                    *grid.get_mut(&point).unwrap() += 1;
+                if let std::collections::hash_map::Entry::Vacant(e) = grid.entry(point) {
+                    e.insert(1);
                 } else {
-                    grid.insert(point, 1);
+                    *grid.get_mut(&point).unwrap() += 1;
                 }
 
                 if x == self.end.x {
@@ -92,12 +93,12 @@ impl Line {
             let dir = sign(self.end.y - self.start.y);
             let x = self.start.x;
             let mut y = self.start.y;
-            while true {
+            loop {
                 let point = Point { x, y };
-                if grid.contains_key(&point) {
-                    *grid.get_mut(&point).unwrap() += 1;
+                if let std::collections::hash_map::Entry::Vacant(e) = grid.entry(point) {
+                    e.insert(1);
                 } else {
-                    grid.insert(point, 1);
+                    *grid.get_mut(&point).unwrap() += 1;
                 }
 
                 if y == self.end.y {
@@ -112,12 +113,12 @@ impl Line {
             let mut x = self.start.x;
             let mut y = self.start.y;
 
-            while true {
+            loop {
                 let point = Point { x, y };
-                if grid.contains_key(&point) {
-                    *grid.get_mut(&point).unwrap() += 1;
+                if let std::collections::hash_map::Entry::Vacant(e) = grid.entry(point) {
+                    e.insert(1);
                 } else {
-                    grid.insert(point, 1);
+                    *grid.get_mut(&point).unwrap() += 1;
                 }
 
                 if y == self.end.y {
@@ -131,12 +132,10 @@ impl Line {
 }
 
 fn sign(value: i32) -> i32 {
-    if value > 0 {
-        1
-    } else if value < 0 {
-        -1
-    } else {
-        panic!()
+    match value.cmp(&0) {
+        Ordering::Less => -1,
+        Ordering::Greater => 1,
+        _ => panic!(),
     }
 }
 
