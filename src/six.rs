@@ -19,14 +19,9 @@ pub fn part_two() {
 fn read_input() -> Vec<i64> {
     let stdin = io::stdin();
 
-    for line in stdin.lock().lines() {
-        let line = line.unwrap();
-        let numbers: Vec<i64> = line.split(',').map(|n| n.parse().unwrap()).collect();
+    let line: String = stdin.lock().lines().last().unwrap().unwrap();
 
-        return numbers;
-    }
-
-    panic!()
+    return line.split(',').map(|n| n.parse().unwrap()).collect();
 }
 
 fn simulate_day(fish: &mut Vec<i64>) {
