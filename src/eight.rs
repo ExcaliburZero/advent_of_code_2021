@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::io;
 use std::io::prelude::*;
-use std::iter::FromIterator;
 
 pub fn part_one() {
     let entries = read_input();
@@ -50,8 +49,8 @@ fn get_num_1_4_7_8(entries: &[(Vec<String>, Vec<String>)]) -> i32 {
     count
 }
 
-fn vec_to_set(vec: &Vec<char>) -> HashSet<char> {
-    HashSet::from_iter(vec.iter().map(|c| *c))
+fn vec_to_set(vec: &[char]) -> HashSet<char> {
+    vec.iter().copied().collect()
 }
 
 fn find_wire_segment_connections(entry: &(Vec<String>, Vec<String>)) -> HashMap<char, char> {
@@ -65,25 +64,25 @@ fn find_wire_segment_connections(entry: &(Vec<String>, Vec<String>)) -> HashMap<
 
     // Narrow down the possibilities based on unique line output digits
     let mut unique_digits_lookup: HashMap<i32, HashSet<char>> = HashMap::new();
-    unique_digits_lookup.insert(2, vec_to_set(&vec!['c', 'f'])); // 1 [2 segments]
-    unique_digits_lookup.insert(3, vec_to_set(&vec!['a', 'c', 'f'])); // 7 [3 segments]
-    unique_digits_lookup.insert(4, vec_to_set(&vec!['b', 'c', 'd', 'f'])); // 4 [4 segments]
-                                                                           // 2, 3, 5 are non-constraining [5 segments]
-                                                                           // 0, 6, 9 are non-constraining [6 segments]
-                                                                           // 8 is non-constraining [7 segments]
+    unique_digits_lookup.insert(2, vec_to_set(&['c', 'f'])); // 1 [2 segments]
+    unique_digits_lookup.insert(3, vec_to_set(&['a', 'c', 'f'])); // 7 [3 segments]
+    unique_digits_lookup.insert(4, vec_to_set(&['b', 'c', 'd', 'f'])); // 4 [4 segments]
+                                                                       // 2, 3, 5 are non-constraining [5 segments]
+                                                                       // 0, 6, 9 are non-constraining [6 segments]
+                                                                       // 8 is non-constraining [7 segments]
 
     let (signal_patterns, _) = entry;
     for pattern in signal_patterns {
         if let Some(dest) = unique_digits_lookup.get(&(pattern.len() as i32)) {
-            for sourceC in pattern.chars() {
+            for source_c in pattern.chars() {
                 let new_possibilities: HashSet<char> = connection_possibilities
-                    .get_mut(&sourceC)
+                    .get_mut(&source_c)
                     .unwrap()
                     .intersection(dest)
                     .cloned()
                     .collect();
 
-                connection_possibilities.insert(sourceC, new_possibilities);
+                connection_possibilities.insert(source_c, new_possibilities);
             }
         }
     }
@@ -113,7 +112,10 @@ fn meets_digits_constraints(
         .map(|p| p.chars().map(|c| *connections.get(&c).unwrap()).collect())
         .collect();
 
-    let _: Vec<_> = mapped_signals.iter_mut().map(|s| s.sort()).collect();
+    let _: Vec<_> = mapped_signals
+        .iter_mut()
+        .map(|s| s.sort_unstable())
+        .collect();
 
     let mut digit_mapping: HashMap<Vec<char>, i32> = HashMap::new();
     digit_mapping.insert(vec!['a', 'b', 'c', 'e', 'f', 'g'], 0);
@@ -165,7 +167,7 @@ fn solve_csp(
         for p in possibilities.iter() {
             if !already_matched.contains(p) {
                 let mut new_conn_poss = connection_possibilities.clone();
-                new_conn_poss.insert(**c, vec_to_set(&vec![*p]));
+                new_conn_poss.insert(**c, vec_to_set(&[*p]));
 
                 if let Some(result) = solve_csp(&new_conn_poss, signal_patterns) {
                     return Some(result);
@@ -195,7 +197,7 @@ fn solve_2(entries: &[(Vec<String>, Vec<String>)]) -> i32 {
     digit_mapping.insert(vec!['a', 'b', 'c', 'd', 'f', 'g'], 9);
 
     let mut sum = 0;
-    for (i, entry) in entries.iter().enumerate() {
+    for entry in entries.iter() {
         let connections = find_wire_segment_connections(entry);
 
         let (_, output_values) = entry;
@@ -203,7 +205,7 @@ fn solve_2(entries: &[(Vec<String>, Vec<String>)]) -> i32 {
         for output_value in output_values.iter() {
             let output_value = map_wires(&output_value, &connections);
             let mut segments: Vec<char> = output_value.chars().collect();
-            segments.sort();
+            segments.sort_unstable();
 
             let digit = digit_mapping.get(&segments).unwrap();
 
