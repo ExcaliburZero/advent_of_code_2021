@@ -3,7 +3,6 @@ use std::io::prelude::*;
 
 pub fn part_one() {
     let numbers = read_input();
-    println!("{:?}", numbers);
     let answer = solve_1(&numbers);
 
     println!("{}", answer);
@@ -11,12 +10,12 @@ pub fn part_one() {
 
 pub fn part_two() {
     let numbers = read_input();
-    //let answer = get_life_support_rating(&numbers);
+    let answer = solve_2(&numbers);
 
-    //println!("{}", answer);
+    println!("{}", answer);
 }
 
-fn i32_to_bits(value: i32) -> Vec<u8> {
+fn i64_to_bits(value: i64) -> Vec<u8> {
     let mut bits = vec![];
 
     for i in (0..4).rev() {
@@ -31,12 +30,12 @@ fn i32_to_bits(value: i32) -> Vec<u8> {
     bits
 }
 
-fn bits_to_i32(bits: &[u8]) -> i32 {
-    let mut value: i32 = 0;
+fn bits_to_i64(bits: &[u8]) -> i64 {
+    let mut value: i64 = 0;
 
     for b in bits.iter() {
         value <<= 1;
-        value += *b as i32;
+        value += *b as i64;
     }
 
     value
@@ -48,12 +47,12 @@ fn read_input() -> Vec<u8> {
     for line in stdin.lock().lines() {
         let line = line.unwrap();
 
-        let hex_nums: Vec<i32> = line
+        let hex_nums: Vec<i64> = line
             .chars()
-            .map(|h| i32::from_str_radix(&(h.to_string()), 16).unwrap())
+            .map(|h| i64::from_str_radix(&(h.to_string()), 16).unwrap())
             .collect();
 
-        return hex_nums.iter().map(|d| i32_to_bits(*d)).flatten().collect();
+        return hex_nums.iter().map(|d| i64_to_bits(*d)).flatten().collect();
     }
 
     panic!()
@@ -61,14 +60,14 @@ fn read_input() -> Vec<u8> {
 
 #[derive(Debug)]
 struct Header {
-    version: i32,
-    packet_id: i32,
+    version: i64,
+    packet_id: i64,
 }
 
 impl Header {
     fn from_bits(buffer: &[u8], start: usize) -> Header {
-        let version = bits_to_i32(&buffer[start..(start + 3)]);
-        let packet_id = bits_to_i32(&buffer[(start + 3)..(start + 6)]);
+        let version = bits_to_i64(&buffer[start..(start + 3)]);
+        let packet_id = bits_to_i64(&buffer[(start + 3)..(start + 6)]);
 
         Header { version, packet_id }
     }
@@ -76,18 +75,56 @@ impl Header {
 
 #[derive(Debug)]
 enum Packet {
-    LiteralValue(Header, i32),
+    LiteralValue(Header, i64),
     Operator(Header, Vec<Packet>),
 }
 
 impl Packet {
-    fn get_sum_versions(&self) -> i32 {
+    fn get_sum_versions(&self) -> i64 {
         match self {
             Packet::LiteralValue(header, _) => header.version,
             Packet::Operator(header, sub_packets) => {
-                let child_versions_sum: i32 =
+                let child_versions_sum: i64 =
                     sub_packets.iter().map(|p| p.get_sum_versions()).sum();
                 header.version + child_versions_sum
+            }
+        }
+    }
+
+    fn calc(&self) -> i64 {
+        match self {
+            Packet::LiteralValue(_, v) => *v,
+            Packet::Operator(header, subs) => {
+                let sub_values: Vec<i64> = subs.iter().map(|p| p.calc()).collect();
+
+                match header.packet_id {
+                    0 => sub_values.iter().sum(),
+                    1 => sub_values.iter().product(),
+                    2 => *sub_values.iter().min().unwrap(),
+                    3 => *sub_values.iter().max().unwrap(),
+                    5 => {
+                        if sub_values[0] > sub_values[1] {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    6 => {
+                        if sub_values[0] < sub_values[1] {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    7 => {
+                        if sub_values[0] == sub_values[1] {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    _ => panic!(),
+                }
             }
         }
     }
@@ -114,7 +151,7 @@ impl Packet {
             i += 1;
 
             value <<= 4;
-            value += bits_to_i32(&buffer[i..(i + 4)]);
+            value += bits_to_i64(&buffer[i..(i + 4)]);
 
             i += 4;
         }
@@ -128,25 +165,21 @@ impl Packet {
         let length_type_id = buffer[i];
         i += 1;
 
-        println!("{:?}, {}", header, start);
-        println!("len_type_id={}", length_type_id);
-
         let length = match length_type_id {
             0 => {
-                let len = bits_to_i32(&buffer[i..(i + 15)]);
+                let len = bits_to_i64(&buffer[i..(i + 15)]);
                 i += 15;
 
                 len
             }
             1 => {
-                let len = bits_to_i32(&buffer[i..(i + 11)]);
+                let len = bits_to_i64(&buffer[i..(i + 11)]);
                 i += 11;
 
                 len
             }
             _ => panic!(),
         };
-        println!("length={}", length);
 
         let mut j = i;
         let mut sub_i = 0;
@@ -171,10 +204,14 @@ impl Packet {
     }
 }
 
-fn solve_1(data: &[u8]) -> i32 {
+fn solve_1(data: &[u8]) -> i64 {
     let packet = Packet::from_bits(data, 0);
 
-    println!("{:?}", packet);
-
     packet.0.get_sum_versions()
+}
+
+fn solve_2(data: &[u8]) -> i64 {
+    let packet = Packet::from_bits(data, 0);
+
+    packet.0.calc()
 }
