@@ -98,27 +98,9 @@ impl Packet {
                     1 => sub_values.iter().product(),
                     2 => *sub_values.iter().min().unwrap(),
                     3 => *sub_values.iter().max().unwrap(),
-                    5 => {
-                        if sub_values[0] > sub_values[1] {
-                            1
-                        } else {
-                            0
-                        }
-                    }
-                    6 => {
-                        if sub_values[0] < sub_values[1] {
-                            1
-                        } else {
-                            0
-                        }
-                    }
-                    7 => {
-                        if sub_values[0] == sub_values[1] {
-                            1
-                        } else {
-                            0
-                        }
-                    }
+                    5 => (sub_values[0] > sub_values[1]) as i64,
+                    6 => (sub_values[0] < sub_values[1]) as i64,
+                    7 => (sub_values[0] == sub_values[1]) as i64,
                     _ => panic!(),
                 }
             }
