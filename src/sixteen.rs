@@ -44,18 +44,14 @@ fn bits_to_i64(bits: &[u8]) -> i64 {
 fn read_input() -> Vec<u8> {
     let stdin = io::stdin();
 
-    for line in stdin.lock().lines() {
-        let line = line.unwrap();
+    let line = stdin.lock().lines().last().unwrap().unwrap();
 
-        let hex_nums: Vec<i64> = line
-            .chars()
-            .map(|h| i64::from_str_radix(&(h.to_string()), 16).unwrap())
-            .collect();
+    let hex_nums: Vec<i64> = line
+        .chars()
+        .map(|h| i64::from_str_radix(&(h.to_string()), 16).unwrap())
+        .collect();
 
-        return hex_nums.iter().map(|d| i64_to_bits(*d)).flatten().collect();
-    }
-
-    panic!()
+    hex_nums.iter().map(|d| i64_to_bits(*d)).flatten().collect()
 }
 
 #[derive(Debug)]
