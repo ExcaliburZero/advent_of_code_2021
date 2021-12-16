@@ -47,7 +47,7 @@ impl Graph {
         }
     }
 
-    fn print(&self) {
+    fn _print(&self) {
         for y in 0..self.grid.len() * self.multiplier as usize {
             if y % self.grid.len() == 0 {
                 println!("=======================================");
@@ -113,8 +113,7 @@ impl Graph {
         distances.push(src, 0);
 
         loop {
-            let (cur, mut weight) = distances.pop().unwrap();
-            weight *= -1;
+            let (cur, _) = distances.pop().unwrap();
 
             let path = paths.get(&cur).unwrap().clone();
 
@@ -147,8 +146,6 @@ impl Graph {
                 }
             }
         }
-
-        panic!()
     }
 }
 
