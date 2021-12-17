@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::io;
 use std::io::prelude::*;
 
@@ -86,12 +87,10 @@ fn lands_in_range(mut velocity_x: i32, mut velocity_y: i32, range: &Range2D) -> 
 
         position = (position.0 + velocity_y, position.1 + velocity_x);
 
-        velocity_x = if velocity_x > 0 {
-            velocity_x - 1
-        } else if velocity_x < 0 {
-            velocity_x + 1
-        } else {
-            0
+        velocity_x = match velocity_x.cmp(&0) {
+            Ordering::Greater => velocity_x - 1,
+            Ordering::Less => velocity_x + 1,
+            Ordering::Equal => 0,
         };
         velocity_y -= 1;
 
@@ -112,33 +111,23 @@ fn lands_in_range(mut velocity_x: i32, mut velocity_y: i32, range: &Range2D) -> 
 }
 
 fn solve_1(range: &Range2D) -> i32 {
-    let mut highest_highest_y = 0;
     for vel_x in 0..400 {
         for vel_y in (0..400).rev() {
-            match lands_in_range(vel_x, vel_y, range) {
-                Some((_, highest_y)) => {
-                    if highest_y > highest_highest_y {
-                        highest_highest_y = highest_y;
-                    }
-                    return highest_y;
-                }
-                None => (),
+            if let Some((_, highest_y)) = lands_in_range(vel_x, vel_y, range) {
+                return highest_y;
             }
         }
     }
 
-    highest_highest_y
+    panic!()
 }
 
 fn solve_2(range: &Range2D) -> i32 {
     let mut count = 0;
     for vel_x in 0..400 {
         for vel_y in (-400..400).rev() {
-            match lands_in_range(vel_x, vel_y, range) {
-                Some((_, _)) => {
-                    count += 1;
-                }
-                None => (),
+            if lands_in_range(vel_x, vel_y, range).is_some() {
+                count += 1;
             }
         }
     }
