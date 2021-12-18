@@ -95,7 +95,6 @@ impl fmt::Display for Pair {
                 write!(f, "]")
             }
         }
-        //write!(f, "[{},{}]", self.x, self.y)
     }
 }
 
@@ -137,10 +136,6 @@ impl Pair {
     }
 
     fn get(&self, path: &Path) -> Option<&Pair> {
-        //println!("------");
-        //println!("self={:?}", self);
-        //println!("path={:?}", path);
-
         if path.is_empty() {
             return Some(self);
         }
@@ -158,10 +153,6 @@ impl Pair {
     }
 
     fn get_mut(&mut self, path: &Path) -> Option<&mut Pair> {
-        //println!("------");
-        //println!("self={:?}", self);
-        //println!("path={:?}", path);
-
         if path.is_empty() {
             return Some(self);
         }
@@ -198,13 +189,11 @@ impl Pair {
             any_applied = false;
 
             if let Some(p) = self.find_explodeable() {
-                // println("EXPLODE: {:?}", p);
                 self.explode(&p);
 
                 any_applied = true;
                 continue;
             } else if let Some(p) = self.find_splitable() {
-                // println("SPLIT: {:?}", p);
                 self.split(&p);
 
                 any_applied = true;
@@ -219,12 +208,10 @@ impl Pair {
         let new_left_value = value / 2;
         let new_right_value = (value / 2) + (value % 2);
 
-        // println("self = {}", self);
         *self.get_mut(path).unwrap() = Pair::Pair(
             Box::new(Pair::Element(new_left_value)),
             Box::new(Pair::Element(new_right_value)),
         );
-        // println("self = {}", self);
     }
 
     fn explode(&mut self, path: &Path) {
@@ -234,48 +221,28 @@ impl Pair {
 
         let next_left_value_path = self.find_next_value_path(path, Dir::Left);
         if let Some(p) = next_left_value_path {
-            // println("[left] p = {:?}", p);
-
             let prev_value = self.get(&p).unwrap().value().unwrap();
 
-            // println("self = {}", self);
             *self.get_mut(&p).unwrap() = Pair::Element(prev_value + left_value);
-            // println("self = {}", self);
         }
 
         let next_right_value_path = self.find_next_value_path(path, Dir::Right);
         if let Some(p) = next_right_value_path {
-            // println("[right] p = {:?}", p);
-
             let prev_value = self.get(&p).unwrap().value().unwrap();
 
-            // println("self = {}", self);
             *self.get_mut(&p).unwrap() = Pair::Element(prev_value + right_value);
-            // println("self = {}", self);
-
-            //panic!();
         }
 
-        // println("self = {}", self);
         *self.get_mut(path).unwrap() = Pair::Element(0);
-        // println("self = {}", self);
-
-        //panic!()
     }
 
     fn find_next_value_path(&self, path: &Path, dir: Dir) -> Option<Path> {
-        // println("find next, path = {:?}, dir = {:?}", path, dir);
-
-        let mut new_path = path.clone(); // = path.pop();
+        let mut new_path = path.clone();
 
         while !new_path.is_empty() {
-            // println("path_part = {:?}", new_path);
             if let Some(d) = new_path.last() {
-                // println("d = {:?}", d);
                 new_path = new_path.pop();
                 if d != dir {
-                    // println("found! = {:?} -> {:?}", new_path, new_path.add(dir));
-                    //return Some(new_path.add(dir));
                     return self.find_next_value_path_down(&new_path.add(dir), dir.opposite());
                 }
             }
@@ -337,9 +304,6 @@ impl Pair {
 
     fn find_explodeable_(&self, path: &Path) -> Option<Path> {
         if path.len() >= 4 {
-            // println("===================");
-            // println("self={}", self);
-            // println("path={:?}", path);
             let p = self.get(path).unwrap();
 
             if p.is_element() {
@@ -369,39 +333,14 @@ impl Pair {
     }
 
     fn from_str(pair_str: &str) -> Pair {
-        /*
-        if pair_str.starts_with('[') {
-            println!("{}", pair_str);
-            let parts: (&str, &str) = pair_str.split_once(',').unwrap();
-
-            let left_str = parts.0.chars().skip(1).collect::<String>();
-            let right_str = parts.1.chars().collect::<String>()[0..(parts.1.len() - 1)].to_string();
-
-            println!("left={}", left_str);
-            println!("right={}", right_str);
-            println!("r_0={}", parts.1.chars().collect::<String>());
-
-            let left = Pair::from_str(&left_str);
-            let right = Pair::from_str(&right_str);
-
-            Pair::Pair(Box::new(left), Box::new(right))
-        } else {
-            println!("{}", pair_str);
-            Pair::Element(pair_str.parse().unwrap())
-        }
-        */
         let mut stack: Vec<Result<Pair, Vec<Pair>>> = vec![];
         let mut i = 0;
         while i < pair_str.len() {
             if pair_str.chars().nth(i).unwrap() == '[' {
-                // println!("[");
                 stack.push(Err(vec![]));
-                // println!("{:?}", stack);
 
                 i += 1;
             } else if pair_str.chars().nth(i).unwrap() == ']' {
-                // println!("]");
-                // println!("{:?}", stack);
                 let elements = stack.pop().unwrap();
                 match elements {
                     Err(elements) => {
@@ -424,8 +363,6 @@ impl Pair {
 
                         let new_pair = Pair::Pair(Box::new(elements[0].clone()), Box::new(pair));
 
-                        // println!("{:?}", stack.last());
-
                         if stack.last().map(|p| p.is_err()).unwrap_or(false) {
                             match stack.last_mut().unwrap() {
                                 Err(ps) => ps.push(new_pair),
@@ -436,7 +373,6 @@ impl Pair {
                         }
                     }
                 }
-                // println!("{:?}", stack);
 
                 i += 1;
             } else if pair_str.chars().nth(i).unwrap() == ',' {
@@ -451,15 +387,12 @@ impl Pair {
                     .0;
 
                 let part_str = pair_str[i..end_i].to_string();
-                // println!("{}", part_str);
                 let pair = Pair::Element(part_str.parse().unwrap());
-                // println!("{:?}", stack);
 
                 match stack.last_mut().unwrap() {
                     Err(p) => p.push(pair),
                     _ => panic!(),
                 };
-                // println!("{:?}", stack);
 
                 i = end_i;
             }
@@ -487,9 +420,6 @@ fn solve_1(pairs: Vec<Pair>) -> i32 {
     pair.reduce();
 
     for p in pairs.iter().skip(1) {
-        // println("*********************");
-        // println("pair = {}", pair);
-        // println("p = {}", p);
         pair = pair.add(p);
     }
 
