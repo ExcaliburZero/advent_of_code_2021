@@ -243,14 +243,15 @@ impl Pair {
     fn find_next_value_path(&self, path: &Path, dir: Dir) -> Option<Path> {
         println!("find next, path = {:?}, dir = {:?}", path, dir);
 
-        let mut new_path = path.pop();
+        let mut new_path = path.clone(); // = path.pop();
 
         while !new_path.is_empty() {
             println!("path_part = {:?}", new_path);
             if let Some(d) = new_path.last() {
                 println!("d = {:?}", d);
                 if d != dir {
-                    println!("found! = {:?}", new_path.add(dir));
+                    new_path = new_path.pop();
+                    println!("found! = {:?} -> {:?}", new_path, new_path.add(dir));
                     //return Some(new_path.add(dir));
                     return self.find_next_value_path_down(&new_path.add(dir), dir.opposite());
                 } else {
