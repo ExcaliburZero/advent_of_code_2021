@@ -102,6 +102,13 @@ impl fmt::Display for Pair {
 }
 
 impl Pair {
+    fn magnitude(&self) -> i32 {
+        match self {
+            Pair::Element(value) => *value,
+            Pair::Pair(left, right) => 3 * left.magnitude() + 2 * right.magnitude(),
+        }
+    }
+
     fn add(&self, other: &Pair) -> Pair {
         let mut new_pair = Pair::Pair(Box::new(self.clone()), Box::new(other.clone()));
 
@@ -488,5 +495,5 @@ fn solve_1(pairs: Vec<Pair>) -> i32 {
         pair = pair.add(p);
     }
 
-    panic!()
+    pair.magnitude()
 }
