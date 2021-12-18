@@ -4,8 +4,6 @@ use std::io::prelude::*;
 
 pub fn part_one() {
     let numbers = read_input();
-
-    println!("{:?}", numbers);
     let answer = solve_1(numbers);
 
     println!("{}", answer);
@@ -13,9 +11,9 @@ pub fn part_one() {
 
 pub fn part_two() {
     let numbers = read_input();
-    //let answer = get_life_support_rating(&numbers);
+    let answer = solve_2(numbers);
 
-    //println!("{}", answer);
+    println!("{}", answer);
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -79,7 +77,7 @@ impl Path {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 enum Pair {
     Element(i32),
     Pair(Box<Pair>, Box<Pair>),
@@ -200,13 +198,13 @@ impl Pair {
             any_applied = false;
 
             if let Some(p) = self.find_explodeable() {
-                println!("EXPLODE: {:?}", p);
+                // println("EXPLODE: {:?}", p);
                 self.explode(&p);
 
                 any_applied = true;
                 continue;
             } else if let Some(p) = self.find_splitable() {
-                println!("SPLIT: {:?}", p);
+                // println("SPLIT: {:?}", p);
                 self.split(&p);
 
                 any_applied = true;
@@ -221,12 +219,12 @@ impl Pair {
         let new_left_value = value / 2;
         let new_right_value = (value / 2) + (value % 2);
 
-        println!("self = {}", self);
+        // println("self = {}", self);
         *self.get_mut(path).unwrap() = Pair::Pair(
             Box::new(Pair::Element(new_left_value)),
             Box::new(Pair::Element(new_right_value)),
         );
-        println!("self = {}", self);
+        // println("self = {}", self);
     }
 
     fn explode(&mut self, path: &Path) {
@@ -236,47 +234,47 @@ impl Pair {
 
         let next_left_value_path = self.find_next_value_path(path, Dir::Left);
         if let Some(p) = next_left_value_path {
-            println!("[left] p = {:?}", p);
+            // println("[left] p = {:?}", p);
 
             let prev_value = self.get(&p).unwrap().value().unwrap();
 
-            println!("self = {}", self);
+            // println("self = {}", self);
             *self.get_mut(&p).unwrap() = Pair::Element(prev_value + left_value);
-            println!("self = {}", self);
+            // println("self = {}", self);
         }
 
         let next_right_value_path = self.find_next_value_path(path, Dir::Right);
         if let Some(p) = next_right_value_path {
-            println!("[right] p = {:?}", p);
+            // println("[right] p = {:?}", p);
 
             let prev_value = self.get(&p).unwrap().value().unwrap();
 
-            println!("self = {}", self);
+            // println("self = {}", self);
             *self.get_mut(&p).unwrap() = Pair::Element(prev_value + right_value);
-            println!("self = {}", self);
+            // println("self = {}", self);
 
             //panic!();
         }
 
-        println!("self = {}", self);
+        // println("self = {}", self);
         *self.get_mut(path).unwrap() = Pair::Element(0);
-        println!("self = {}", self);
+        // println("self = {}", self);
 
         //panic!()
     }
 
     fn find_next_value_path(&self, path: &Path, dir: Dir) -> Option<Path> {
-        println!("find next, path = {:?}, dir = {:?}", path, dir);
+        // println("find next, path = {:?}, dir = {:?}", path, dir);
 
         let mut new_path = path.clone(); // = path.pop();
 
         while !new_path.is_empty() {
-            println!("path_part = {:?}", new_path);
+            // println("path_part = {:?}", new_path);
             if let Some(d) = new_path.last() {
-                println!("d = {:?}", d);
+                // println("d = {:?}", d);
                 new_path = new_path.pop();
                 if d != dir {
-                    println!("found! = {:?} -> {:?}", new_path, new_path.add(dir));
+                    // println("found! = {:?} -> {:?}", new_path, new_path.add(dir));
                     //return Some(new_path.add(dir));
                     return self.find_next_value_path_down(&new_path.add(dir), dir.opposite());
                 }
@@ -339,9 +337,9 @@ impl Pair {
 
     fn find_explodeable_(&self, path: &Path) -> Option<Path> {
         if path.len() >= 4 {
-            println!("===================");
-            println!("self={}", self);
-            println!("path={:?}", path);
+            // println("===================");
+            // println("self={}", self);
+            // println("path={:?}", path);
             let p = self.get(path).unwrap();
 
             if p.is_element() {
@@ -489,11 +487,30 @@ fn solve_1(pairs: Vec<Pair>) -> i32 {
     pair.reduce();
 
     for p in pairs.iter().skip(1) {
-        println!("*********************");
-        println!("pair = {}", pair);
-        println!("p = {}", p);
+        // println("*********************");
+        // println("pair = {}", pair);
+        // println("p = {}", p);
         pair = pair.add(p);
     }
 
     pair.magnitude()
+}
+
+fn solve_2(pairs: Vec<Pair>) -> i32 {
+    let mut max_magnitude = 0;
+
+    for p1 in pairs.iter() {
+        for p2 in pairs.iter() {
+            if p1 != p2 {
+                let sum = p1.add(p2);
+                let magnitude = sum.magnitude();
+
+                if magnitude > max_magnitude {
+                    max_magnitude = magnitude;
+                }
+            }
+        }
+    }
+
+    max_magnitude
 }
