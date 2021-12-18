@@ -193,13 +193,33 @@ impl Pair {
             any_applied = false;
 
             if let Some(p) = self.find_explodeable() {
+                println!("EXPLODE: {:?}", p);
                 self.explode(&p);
 
                 any_applied = true;
                 continue;
+            } else if let Some(p) = self.find_splitable() {
+                println!("SPLIT: {:?}", p);
+                self.split(&p);
+
+                any_applied = true;
+                continue;
             }
-            // TODO: split
         }
+    }
+
+    fn split(&mut self, path: &Path) {
+        let value = self.get(path).unwrap().value().unwrap();
+
+        let new_left_value = value / 2;
+        let new_right_value = (value / 2) + (value % 2);
+
+        println!("self = {}", self);
+        *self.get_mut(path).unwrap() = Pair::Pair(
+            Box::new(Pair::Element(new_left_value)),
+            Box::new(Pair::Element(new_right_value)),
+        );
+        println!("self = {}", self);
     }
 
     fn explode(&mut self, path: &Path) {
@@ -231,8 +251,6 @@ impl Pair {
             //panic!();
         }
 
-        // TODO: right
-        // TODO: replace exploding_pair with 0
         println!("self = {}", self);
         *self.get_mut(path).unwrap() = Pair::Element(0);
         println!("self = {}", self);
@@ -249,13 +267,11 @@ impl Pair {
             println!("path_part = {:?}", new_path);
             if let Some(d) = new_path.last() {
                 println!("d = {:?}", d);
+                new_path = new_path.pop();
                 if d != dir {
-                    new_path = new_path.pop();
                     println!("found! = {:?} -> {:?}", new_path, new_path.add(dir));
                     //return Some(new_path.add(dir));
                     return self.find_next_value_path_down(&new_path.add(dir), dir.opposite());
-                } else {
-                    new_path = new_path.pop();
                 }
             }
         }
@@ -278,6 +294,36 @@ impl Pair {
 
             return None;
         }
+    }
+
+    fn find_splitable(&self) -> Option<Path> {
+        self.find_splitable_(&Path::new())
+    }
+
+    fn find_splitable_(&self, path: &Path) -> Option<Path> {
+        if let Some(pair) = self.get(path) {
+            match pair {
+                Pair::Element(value) => {
+                    if *value >= 10 {
+                        return Some(path.clone());
+                    } else {
+                        return None;
+                    }
+                }
+                Pair::Pair(_, _) => {
+                    if let Some(p) = self.find_splitable_(&path.add(Dir::Left)) {
+                        return Some(p);
+                    }
+                    if let Some(p) = self.find_splitable_(&path.add(Dir::Right)) {
+                        return Some(p);
+                    }
+
+                    return None;
+                }
+            }
+        }
+
+        None
     }
 
     fn find_explodeable(&self) -> Option<Path> {
