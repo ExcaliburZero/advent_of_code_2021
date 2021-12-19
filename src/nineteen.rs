@@ -210,6 +210,9 @@ fn read_input() -> Vec<Scanner> {
         }
     }
 
+    scanners.push(Scanner::from_lines(&scanner_lines));
+    scanner_lines = vec![];
+
     scanners
 }
 
