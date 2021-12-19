@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io;
 use std::io::prelude::*;
 
@@ -18,10 +18,10 @@ pub fn part_two() {
 
 type ScannerId = i32;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Scanner {
     id: ScannerId,
-    beacons: Vec<RelativePosition>,
+    beacons: HashSet<RelativePosition>,
 }
 
 impl Scanner {
@@ -32,7 +32,7 @@ impl Scanner {
 
         let id: i32 = id_str.parse().unwrap();
 
-        let beacons: Vec<RelativePosition> = lines[1..lines.len()]
+        let beacons: HashSet<RelativePosition> = lines[1..lines.len()]
             .iter()
             .map(|l| RelativePosition::from_str(l))
             .collect();
@@ -40,7 +40,7 @@ impl Scanner {
         Scanner { id, beacons }
     }
 
-    fn rotated_beacons(&self, rotation: &Rotation) -> Vec<RelativePosition> {
+    fn rotated_beacons(&self, rotation: &Rotation) -> HashSet<RelativePosition> {
         self.beacons.iter().map(|p| p.rotated(rotation)).collect()
     }
 }
@@ -270,7 +270,7 @@ fn find_relations___old(
 }
 
 fn calc_beacon_neighbors(
-    beacons: &[RelativePosition],
+    beacons: &HashSet<RelativePosition>,
     num_neighbors: i32,
 ) -> HashMap<RelativePosition, Vec<RelativeDistance>> {
     let mut beacon_neighbors: HashMap<RelativePosition, Vec<RelativeDistance>> = HashMap::new();
@@ -298,8 +298,8 @@ fn calc_beacon_neighbors(
 }
 
 fn find_potential_offsets(
-    beacons_1: &[RelativePosition],
-    beacons_2: &[RelativePosition],
+    beacons_1: &HashSet<RelativePosition>,
+    beacons_2: &HashSet<RelativePosition>,
 ) -> Vec<RelativePosition> {
     let beacon_neighbors_1 = calc_beacon_neighbors(beacons_1, 3);
     let beacon_neighbors_2 = calc_beacon_neighbors(beacons_2, 3);
@@ -315,10 +315,10 @@ fn find_potential_offsets(
                 //let offset = b_1.dist(b_2).to_pos();
                 let offset = b_2.dist(b_1).to_pos();
 
-                println!("    --------");
-                println!("    Potential offset = {:?}", offset);
-                println!("    b_1 = {:?}, {:?}", b_1, neighbors_1);
-                println!("    b_2 = {:?}, {:?}", b_2, neighbors_2);
+                //  println!("    --------");
+                //  println!("    Potential offset = {:?}", offset);
+                //  println!("    b_1 = {:?}, {:?}", b_1, neighbors_1);
+                //  println!("    b_2 = {:?}, {:?}", b_2, neighbors_2);
 
                 possible_offsets.push(offset);
             }
@@ -329,8 +329,8 @@ fn find_potential_offsets(
 }
 
 fn find_best_offset(
-    beacons_1: &[RelativePosition],
-    beacons_2: &[RelativePosition],
+    beacons_1: &HashSet<RelativePosition>,
+    beacons_2: &HashSet<RelativePosition>,
 ) -> Option<(RelativePosition, i32)> {
     /*for x_offset in -2000..2001 {
     println!("    x_offset = {}", x_offset);
@@ -339,7 +339,7 @@ fn find_best_offset(
             let offset = RelativePosition::new(x_offset, y_offset, z_offset);*/
 
     for offset in find_potential_offsets(beacons_1, beacons_2) {
-        println!("    offset = {:?}", offset);
+        //  println!("    offset = {:?}", offset);
         let mut num_matches = 0;
         for b_1 in beacons_1.iter() {
             //let b_1 = b_1.offsetted(&offset);
@@ -352,9 +352,9 @@ fn find_best_offset(
             }
         }
 
-        println!("    num_matches = {}", num_matches);
+        //  println!("    num_matches = {}", num_matches);
         if num_matches >= 12 {
-            println!("    ***");
+            //  println!("    ***");
             return Some((offset, num_matches));
         }
     }
@@ -367,34 +367,35 @@ fn find_best_offset(
 
 fn find_relations(
     scanners: &[Scanner],
-) -> HashMap<ScannerId, Vec<(Rotation, Rotation, RelativePosition, ScannerId)>> {
+) -> HashMap<ScannerId, Vec<(Rotation, RelativePosition, ScannerId)>> {
     let mut relations = HashMap::new();
 
     println!("Finding relations...");
     for scanner_1 in scanners.iter() {
         for scanner_2 in scanners.iter() {
-            println!("Scanners = ({}, {})", scanner_1.id, scanner_2.id);
+            //  println!("Scanners = ({}, {})", scanner_1.id, scanner_2.id);
             if scanner_1.id == scanner_2.id {
                 continue;
             }
 
             // TODO: don't have an r_1
             //for r_1 in Rotation::all().iter() {
-            let r_1 = Rotation::all()[0];
+            //let r_1 = Rotation::all()[0];
             for r_2 in Rotation::all().iter() {
-                println!("  Rotations = ({:?}, {:?})", r_1, r_2);
-                let beacons_1 = scanner_1.rotated_beacons(&r_1);
+                //println!("  Rotations = ({:?}, {:?})", r_1, r_2);
+                //  println!("  Rotation = {:?}", r_2);
+                //let beacons_1 = scanner_1.rotated_beacons(&r_1);
                 let beacons_2 = scanner_2.rotated_beacons(r_2);
-                println!("  Applied rotations");
-                println!("  ({:?} into {:?})", scanner_1.beacons[0], beacons_1[0]);
-                println!("  ({:?} into {:?})", scanner_2.beacons[0], beacons_2[0]);
+                //  println!("  Applied rotations");
+                //println!("  ({:?} into {:?})", scanner_1.beacons[0], beacons_1[0]);
+                //println!("  ({:?} into {:?})", scanner_2.beacons[0], beacons_2[0]);
 
-                match find_best_offset(&beacons_1, &beacons_2) {
+                match find_best_offset(&scanner_1.beacons, &beacons_2) {
                     Some((shift, _)) => {
                         relations
                             .entry(scanner_1.id)
                             .or_insert_with(Vec::new)
-                            .push((r_1, *r_2, shift, scanner_2.id));
+                            .push((*r_2, shift, scanner_2.id));
                     }
                     None => (),
                 }
@@ -406,23 +407,86 @@ fn find_relations(
     relations
 }
 
+fn get_beacons(
+    src: ScannerId,
+    visited: &HashSet<ScannerId>,
+    relations: &HashMap<ScannerId, Vec<(Rotation, RelativePosition, ScannerId)>>,
+    scanners: &HashMap<ScannerId, Scanner>,
+) -> HashSet<RelativePosition> {
+    println!("src = {}, {:?}", src, visited);
+    let mut beacons = scanners[&src].beacons.clone();
+    for (rotation, offset, neighbor) in relations[&src].iter() {
+        if visited.contains(neighbor) {
+            continue;
+        }
+
+        let mut new_visited = visited.clone();
+        new_visited.insert(src);
+
+        let neighbor_beacons = get_beacons(*neighbor, &new_visited, relations, scanners);
+
+        for b in neighbor_beacons {
+            //let b = b.offsetted(offset).rotated(rotation);
+            let b = b.rotated(rotation).offsetted(offset);
+
+            beacons.insert(b);
+        }
+    }
+
+    beacons
+}
+
+fn build_complete_map(
+    scanners: &[Scanner],
+    relations: &HashMap<ScannerId, Vec<(Rotation, RelativePosition, ScannerId)>>,
+) -> Scanner {
+    let mut visited = HashSet::new();
+    visited.insert(0);
+
+    // testing
+    /*visited.insert(2);
+    visited.insert(3);
+    visited.insert(4);*/
+
+    let mut scanners_map = HashMap::new();
+    for scanner in scanners.iter() {
+        scanners_map.insert(scanner.id, scanner.clone());
+    }
+
+    let all_beacons = get_beacons(0, &visited, relations, &scanners_map);
+
+    let mut all_beacons_vec: Vec<RelativePosition> = all_beacons.iter().cloned().collect();
+    all_beacons_vec.sort_by_key(|p| (p.x, p.y, p.z));
+
+    for b in all_beacons_vec.iter() {
+        println!("b = {:?}", b);
+    }
+
+    Scanner {
+        id: 0,
+        beacons: all_beacons,
+    }
+}
+
 fn solve_1(scanners: &[Scanner]) -> i32 {
     let scanner_relations = find_relations(scanners);
 
     //println!("scanner_relations = {:?}", scanner_relations);
 
-    for (scanner_id_1, related_scanners) in scanner_relations {
-        for (r_1, r_2, offset_2, scanner_id_2) in related_scanners.iter() {
+    for (scanner_id_1, related_scanners) in scanner_relations.iter() {
+        for (r_2, offset_2, scanner_id_2) in related_scanners.iter() {
             println!(
-                "{} => {:?} {:?} {:?} {}",
-                scanner_id_1, r_1, r_2, offset_2, scanner_id_2
+                "{} => {:?} {:?} {}",
+                scanner_id_1, r_2, offset_2, scanner_id_2
             );
         }
     }
+
+    let total_scanner = build_complete_map(scanners, &scanner_relations);
 
     // TODO: collapse relative possitions onto scanner 0
 
     // TODO: return count of beacons
 
-    panic!()
+    total_scanner.beacons.len() as i32
 }
