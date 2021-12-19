@@ -309,7 +309,13 @@ fn find_potential_offsets(
     for (b_1, neighbors_1) in beacon_neighbors_1.iter() {
         for (b_2, neighbors_2) in beacon_neighbors_2.iter() {
             if neighbors_1 == neighbors_2 {
-                let offset = b_1.dist(b_2).to_pos();
+                //let offset = b_1.dist(b_2).to_pos();
+                let offset = b_2.dist(b_1).to_pos();
+
+                println!("    --------");
+                println!("    Potential offset = {:?}", offset);
+                println!("    b_1 = {:?}, {:?}", b_1, neighbors_1);
+                println!("    b_2 = {:?}, {:?}", b_2, neighbors_2);
 
                 possible_offsets.push(offset);
             }
@@ -333,17 +339,19 @@ fn find_best_offset(
         println!("    offset = {:?}", offset);
         let mut num_matches = 0;
         for b_1 in beacons_1.iter() {
-            let b_1 = b_1.offsetted(&offset);
+            //let b_1 = b_1.offsetted(&offset);
             for b_2 in beacons_2.iter() {
                 let b_2 = b_2.offsetted(&offset);
 
-                if b_1 == b_2 {
+                if *b_1 == b_2 {
                     num_matches += 1;
                 }
             }
         }
 
+        println!("    num_matches = {}", num_matches);
         if num_matches >= 12 {
+            println!("    ***");
             return Some((offset, num_matches));
         }
     }
@@ -367,25 +375,28 @@ fn find_relations(
                 continue;
             }
 
-            for r_1 in Rotation::all().iter() {
-                for r_2 in Rotation::all().iter() {
-                    println!("  Rotations = ({:?}, {:?})", r_1, r_2);
-                    let beacons_1 = scanner_1.rotated_beacons(r_1);
-                    let beacons_2 = scanner_2.rotated_beacons(r_2);
-                    println!("  Applied rotations");
-                    println!("  ({:?} into {:?})", scanner_1.beacons[0], beacons_1[0]);
+            // TODO: don't have an r_1
+            //for r_1 in Rotation::all().iter() {
+            let r_1 = Rotation::all()[0];
+            for r_2 in Rotation::all().iter() {
+                println!("  Rotations = ({:?}, {:?})", r_1, r_2);
+                let beacons_1 = scanner_1.rotated_beacons(&r_1);
+                let beacons_2 = scanner_2.rotated_beacons(r_2);
+                println!("  Applied rotations");
+                println!("  ({:?} into {:?})", scanner_1.beacons[0], beacons_1[0]);
+                println!("  ({:?} into {:?})", scanner_2.beacons[0], beacons_2[0]);
 
-                    match find_best_offset(&beacons_1, &beacons_2) {
-                        Some((shift, _)) => {
-                            relations
-                                .entry(scanner_1.id)
-                                .or_insert_with(Vec::new)
-                                .push((*r_1, *r_2, shift, scanner_2.id));
-                        }
-                        None => (),
+                match find_best_offset(&beacons_1, &beacons_2) {
+                    Some((shift, _)) => {
+                        relations
+                            .entry(scanner_1.id)
+                            .or_insert_with(Vec::new)
+                            .push((r_1, *r_2, shift, scanner_2.id));
                     }
+                    None => (),
                 }
             }
+            //}
         }
     }
 
@@ -395,7 +406,16 @@ fn find_relations(
 fn solve_1(scanners: &[Scanner]) -> i32 {
     let scanner_relations = find_relations(scanners);
 
-    println!("scanner_relations = {:?}", scanner_relations);
+    //println!("scanner_relations = {:?}", scanner_relations);
+
+    for (scanner_id_1, related_scanners) in scanner_relations {
+        for (r_1, r_2, offset_2, scanner_id_2) in related_scanners.iter() {
+            println!(
+                "{} => {:?} {:?} {:?} {}",
+                scanner_id_1, r_1, r_2, offset_2, scanner_id_2
+            );
+        }
+    }
 
     // TODO: collapse relative possitions onto scanner 0
 
