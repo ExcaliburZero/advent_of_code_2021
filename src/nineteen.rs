@@ -341,21 +341,11 @@ fn find_potential_offsets(
     let beacon_neighbors_1 = calc_beacon_neighbors(beacons_1, 3);
     let beacon_neighbors_2 = calc_beacon_neighbors(beacons_2, 3);
 
-    /*for (b, neighbors) in beacon_neighbors_1.iter() {
-        println!("    {:?} next to {:?}", b, neighbors);
-    }*/
-
     let mut possible_offsets = vec![];
     for (b_1, neighbors_1) in beacon_neighbors_1.iter() {
         for (b_2, neighbors_2) in beacon_neighbors_2.iter() {
             if neighbors_1 == neighbors_2 {
-                //let offset = b_1.dist(b_2).to_pos();
                 let offset = b_2.dist(b_1).to_pos();
-
-                //  println!("    --------");
-                //  println!("    Potential offset = {:?}", offset);
-                //  println!("    b_1 = {:?}, {:?}", b_1, neighbors_1);
-                //  println!("    b_2 = {:?}, {:?}", b_2, neighbors_2);
 
                 possible_offsets.push(offset);
             }
@@ -369,17 +359,9 @@ fn find_best_offset(
     beacons_1: &HashSet<RelativePosition>,
     beacons_2: &HashSet<RelativePosition>,
 ) -> Option<(RelativePosition, i32)> {
-    /*for x_offset in -2000..2001 {
-    println!("    x_offset = {}", x_offset);
-    for y_offset in -2000..2001 {
-        for z_offset in -2000..2001 {
-            let offset = RelativePosition::new(x_offset, y_offset, z_offset);*/
-
     for offset in find_potential_offsets(beacons_1, beacons_2) {
-        //  println!("    offset = {:?}", offset);
         let mut num_matches = 0;
         for b_1 in beacons_1.iter() {
-            //let b_1 = b_1.offsetted(&offset);
             for b_2 in beacons_2.iter() {
                 let b_2 = b_2.offsetted(&offset);
 
@@ -389,15 +371,10 @@ fn find_best_offset(
             }
         }
 
-        //  println!("    num_matches = {}", num_matches);
         if num_matches >= 12 {
-            //  println!("    ***");
             return Some((offset, num_matches));
         }
     }
-    /*}
-        }
-    }*/
 
     None
 }
@@ -407,25 +384,14 @@ fn find_relations(
 ) -> HashMap<ScannerId, Vec<(Rotation, RelativePosition, ScannerId)>> {
     let mut relations = HashMap::new();
 
-    println!("Finding relations...");
     for scanner_1 in scanners.iter() {
         for scanner_2 in scanners.iter() {
-            //  println!("Scanners = ({}, {})", scanner_1.id, scanner_2.id);
             if scanner_1.id == scanner_2.id {
                 continue;
             }
 
-            // TODO: don't have an r_1
-            //for r_1 in Rotation::all().iter() {
-            //let r_1 = Rotation::all()[0];
             for r_2 in Rotation::all().iter() {
-                //println!("  Rotations = ({:?}, {:?})", r_1, r_2);
-                //  println!("  Rotation = {:?}", r_2);
-                //let beacons_1 = scanner_1.rotated_beacons(&r_1);
                 let beacons_2 = scanner_2.rotated_beacons(r_2);
-                //  println!("  Applied rotations");
-                //println!("  ({:?} into {:?})", scanner_1.beacons[0], beacons_1[0]);
-                //println!("  ({:?} into {:?})", scanner_2.beacons[0], beacons_2[0]);
 
                 match find_best_offset(&scanner_1.beacons, &beacons_2) {
                     Some((shift, _)) => {
@@ -437,7 +403,6 @@ fn find_relations(
                     None => (),
                 }
             }
-            //}
         }
     }
 
@@ -450,7 +415,6 @@ fn get_beacons(
     relations: &HashMap<ScannerId, Vec<(Rotation, RelativePosition, ScannerId)>>,
     scanners: &HashMap<ScannerId, Scanner>,
 ) -> HashSet<RelativePosition> {
-    println!("src = {}, {:?}", src, visited);
     let mut beacons = scanners[&src].beacons.clone();
     for (rotation, offset, neighbor) in relations[&src].iter() {
         if visited.contains(neighbor) {
@@ -463,7 +427,6 @@ fn get_beacons(
         let neighbor_beacons = get_beacons(*neighbor, &new_visited, relations, scanners);
 
         for b in neighbor_beacons {
-            //let b = b.offsetted(offset).rotated(rotation);
             let b = b.rotated(rotation).offsetted(offset);
 
             beacons.insert(b);
@@ -480,11 +443,6 @@ fn build_complete_map(
     let mut visited = HashSet::new();
     visited.insert(0);
 
-    // testing
-    /*visited.insert(2);
-    visited.insert(3);
-    visited.insert(4);*/
-
     let mut scanners_map = HashMap::new();
     for scanner in scanners.iter() {
         scanners_map.insert(scanner.id, scanner.clone());
@@ -495,10 +453,6 @@ fn build_complete_map(
     let mut all_beacons_vec: Vec<RelativePosition> = all_beacons.iter().cloned().collect();
     all_beacons_vec.sort_by_key(|p| (p.x, p.y, p.z));
 
-    for b in all_beacons_vec.iter() {
-        println!("b = {:?}", b);
-    }
-
     Scanner {
         id: 0,
         beacons: all_beacons,
@@ -507,23 +461,7 @@ fn build_complete_map(
 
 fn solve_1(scanners: &[Scanner]) -> i32 {
     let scanner_relations = find_relations(scanners);
-
-    //println!("scanner_relations = {:?}", scanner_relations);
-
-    for (scanner_id_1, related_scanners) in scanner_relations.iter() {
-        for (r_2, offset_2, scanner_id_2) in related_scanners.iter() {
-            println!(
-                "{} => {:?} {:?} {}",
-                scanner_id_1, r_2, offset_2, scanner_id_2
-            );
-        }
-    }
-
     let total_scanner = build_complete_map(scanners, &scanner_relations);
-
-    // TODO: collapse relative possitions onto scanner 0
-
-    // TODO: return count of beacons
 
     total_scanner.beacons.len() as i32
 }
@@ -540,7 +478,7 @@ fn get_scanner_positions(
             continue;
         }
 
-        let new_pos = src_pos.offsetted(&offset.rotated(src_rotation)); // TODO: what about rotation?
+        let new_pos = src_pos.offsetted(&offset.rotated(src_rotation));
         scanner_positions.insert(*neighbor, new_pos.clone());
 
         let neighbor_beacons = get_scanner_positions(
@@ -574,10 +512,6 @@ fn solve_2(scanners: &[Scanner]) -> i32 {
 
     let scanner_positions: HashMap<ScannerId, RelativePosition> =
         find_scanner_positions(scanners, &scanner_relations);
-
-    for (scanner, pos) in scanner_positions.iter() {
-        println!("scanner {:?} at {:?}", scanner, pos);
-    }
 
     let mut largest_dist = 0;
     for (id_1, pos_1) in scanner_positions.iter() {
