@@ -111,23 +111,6 @@ impl RelativeDistance {
     fn manhattan(&self) -> i32 {
         self.x.abs() + self.y.abs() + self.z.abs()
     }
-
-    fn possible_matches(&self, other: &RelativeDistance) -> Vec<(Rotation, Rotation)> {
-        let mut possible_matches = vec![];
-        for (self_rot, self_dist) in self.get_rotations() {
-            for (other_rot, other_dist) in other.get_rotations() {
-                if self_dist == other_dist {
-                    possible_matches.push((self_rot, other_rot));
-                }
-            }
-        }
-
-        possible_matches
-    }
-
-    fn get_rotations(&self) -> Vec<(Rotation, RelativeDistance)> {
-        panic!()
-    }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -248,7 +231,7 @@ fn read_input() -> Vec<Scanner> {
     }
 
     scanners.push(Scanner::from_lines(&scanner_lines));
-    scanner_lines = vec![];
+    scanner_lines.clear();
 
     scanners
 }
@@ -340,14 +323,11 @@ fn find_relations(
             for r_2 in Rotation::all().iter() {
                 let beacons_2 = scanner_2.rotated_beacons(r_2);
 
-                match find_best_offset(&scanner_1.beacons, &beacons_2) {
-                    Some((shift, _)) => {
-                        relations
-                            .entry(scanner_1.id)
-                            .or_insert_with(Vec::new)
-                            .push((*r_2, shift, scanner_2.id));
-                    }
-                    None => (),
+                if let Some((shift, _)) = find_best_offset(&scanner_1.beacons, &beacons_2) {
+                    relations
+                        .entry(scanner_1.id)
+                        .or_insert_with(Vec::new)
+                        .push((*r_2, shift, scanner_2.id));
                 }
             }
         }
@@ -428,7 +408,7 @@ fn get_scanner_positions(
         let new_pos = src_pos.offsetted(&offset.rotated(src_rotation));
         scanner_positions.insert(*neighbor, new_pos.clone());
 
-        let neighbor_beacons = get_scanner_positions(
+        get_scanner_positions(
             *neighbor,
             &new_pos,
             &rotation.rotated(src_rotation),
@@ -439,7 +419,6 @@ fn get_scanner_positions(
 }
 
 fn find_scanner_positions(
-    scanners: &[Scanner],
     relations: &HashMap<ScannerId, Vec<(Rotation, RelativePosition, ScannerId)>>,
 ) -> HashMap<ScannerId, RelativePosition> {
     let mut scanner_positions: HashMap<ScannerId, RelativePosition> = HashMap::new();
@@ -458,7 +437,7 @@ fn solve_2(scanners: &[Scanner]) -> i32 {
     let scanner_relations = find_relations(scanners);
 
     let scanner_positions: HashMap<ScannerId, RelativePosition> =
-        find_scanner_positions(scanners, &scanner_relations);
+        find_scanner_positions(&scanner_relations);
 
     let mut largest_dist = 0;
     for (id_1, pos_1) in scanner_positions.iter() {
