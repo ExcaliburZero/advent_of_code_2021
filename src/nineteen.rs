@@ -94,20 +94,20 @@ impl RelativeDistance {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 enum Dir {
     X,
     Y,
     Z,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 enum Sign {
     Positive,
     Negative,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 struct Rotation {
     axes: [(Dir, Sign); 3],
 }
@@ -135,12 +135,19 @@ fn find_possible_scanner_relations(
     scanner_1: &Scanner,
     scanner_2: &Scanner,
 ) -> HashMap<(Rotation, Rotation), i32> {
+    let mut possible_relations = HashMap::new();
+
     for beacon_1 in scanner_1.beacons.iter() {
         for beacon_2 in scanner_2.beacons.iter() {
-            let possible_relations: Vec<(Rotation, Rotation)> = panic!();
+            let possible_beacon_relations: Vec<(Rotation, Rotation)> = panic!();
+
+            for (r1, r2) in possible_beacon_relations.iter() {
+                *possible_relations.entry((*r1, *r2)).or_insert(0) += 1;
+            }
         }
     }
-    panic!()
+
+    possible_relations
 }
 
 fn find_relations(
