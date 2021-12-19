@@ -39,9 +39,13 @@ impl Scanner {
 
         Scanner { id, beacons }
     }
+
+    fn rotated_beacons(&self, rotation: &Rotation) -> Vec<RelativePosition> {
+        self.beacons.iter().map(|p| p.rotated(rotation)).collect()
+    }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 struct RelativePosition {
     x: i32,
     y: i32,
@@ -53,6 +57,10 @@ impl RelativePosition {
         RelativeDistance::new(other.x - self.x, other.y - self.y, other.z - self.z)
     }
 
+    fn new(x: i32, y: i32, z: i32) -> RelativePosition {
+        RelativePosition { x, y, z }
+    }
+
     fn from_str(pos_str: &str) -> RelativePosition {
         let parts: Vec<&str> = pos_str.split(',').collect();
 
@@ -62,9 +70,29 @@ impl RelativePosition {
 
         RelativePosition { x, y, z }
     }
+
+    fn rotated(&self, rotation: &Rotation) -> RelativePosition {
+        let new_x = self.get_axis_value(&rotation.axes[0].0) * rotation.axes[0].1.to_i32();
+        let new_y = self.get_axis_value(&rotation.axes[1].0) * rotation.axes[1].1.to_i32();
+        let new_z = self.get_axis_value(&rotation.axes[2].0) * rotation.axes[2].1.to_i32();
+
+        RelativePosition::new(new_x, new_y, new_z)
+    }
+
+    fn get_axis_value(&self, axis: &Dir) -> i32 {
+        match axis {
+            Dir::X => self.x,
+            Dir::Y => self.y,
+            Dir::Z => self.z,
+        }
+    }
+
+    fn offsetted(&self, offset: &RelativePosition) -> RelativePosition {
+        RelativePosition::new(self.x + offset.x, self.y + offset.y, self.z + offset.z)
+    }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 struct RelativeDistance {
     x: i32,
     y: i32,
@@ -74,6 +102,14 @@ struct RelativeDistance {
 impl RelativeDistance {
     fn new(x: i32, y: i32, z: i32) -> RelativeDistance {
         RelativeDistance { x, y, z }
+    }
+
+    fn to_pos(&self) -> RelativePosition {
+        RelativePosition::new(self.x, self.y, self.z)
+    }
+
+    fn manhattan(&self) -> i32 {
+        self.x.abs() + self.y.abs() + self.z.abs()
     }
 
     fn possible_matches(&self, other: &RelativeDistance) -> Vec<(Rotation, Rotation)> {
@@ -94,22 +130,68 @@ impl RelativeDistance {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 enum Dir {
     X,
     Y,
     Z,
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 enum Sign {
     Positive,
     Negative,
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+impl Sign {
+    fn to_i32(self) -> i32 {
+        match self {
+            Sign::Positive => 1,
+            Sign::Negative => -1,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 struct Rotation {
     axes: [(Dir, Sign); 3],
+}
+
+impl Rotation {
+    fn all() -> Vec<Rotation> {
+        let signs = vec![Sign::Positive, Sign::Negative];
+
+        let mut rotations = vec![];
+        for x_pos in 0..3 {
+            for y_pos in 0..3 {
+                if y_pos == x_pos {
+                    continue;
+                }
+
+                for z_pos in 0..3 {
+                    if z_pos == x_pos || z_pos == y_pos {
+                        continue;
+                    }
+
+                    for x_sign in signs.iter() {
+                        for y_sign in signs.iter() {
+                            for z_sign in signs.iter() {
+                                let mut axes = [(Dir::X, Sign::Positive); 3];
+
+                                axes[x_pos] = (Dir::X, *x_sign);
+                                axes[y_pos] = (Dir::Y, *y_sign);
+                                axes[z_pos] = (Dir::Z, *z_sign);
+
+                                rotations.push(Rotation { axes });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        rotations
+    }
 }
 
 fn read_input() -> Vec<Scanner> {
@@ -150,7 +232,7 @@ fn find_possible_scanner_relations(
     possible_relations
 }
 
-fn find_relations(
+fn find_relations___old(
     scanners: &[Scanner],
 ) -> HashMap<ScannerId, Vec<(Rotation, Rotation, ScannerId)>> {
     let mut relations: HashMap<ScannerId, Vec<(Rotation, Rotation, ScannerId)>> = HashMap::new();
@@ -184,8 +266,136 @@ fn find_relations(
     relations
 }
 
+fn calc_beacon_neighbors(
+    beacons: &[RelativePosition],
+    num_neighbors: i32,
+) -> HashMap<RelativePosition, Vec<RelativeDistance>> {
+    let mut beacon_neighbors: HashMap<RelativePosition, Vec<RelativeDistance>> = HashMap::new();
+
+    for b_1 in beacons.iter() {
+        let mut neighbors = beacons
+            .iter()
+            .filter(|b_2| b_1 != *b_2)
+            .map(|b_2| b_1.dist(b_2))
+            .collect::<Vec<RelativeDistance>>();
+
+        neighbors.sort_by_key(|dist| dist.manhattan());
+
+        beacon_neighbors.insert(
+            b_1.clone(),
+            neighbors
+                .iter()
+                .cloned()
+                .take(num_neighbors as usize)
+                .collect(),
+        );
+    }
+
+    beacon_neighbors
+}
+
+fn find_potential_offsets(
+    beacons_1: &[RelativePosition],
+    beacons_2: &[RelativePosition],
+) -> Vec<RelativePosition> {
+    let beacon_neighbors_1 = calc_beacon_neighbors(beacons_1, 3);
+    let beacon_neighbors_2 = calc_beacon_neighbors(beacons_2, 3);
+
+    /*for (b, neighbors) in beacon_neighbors_1.iter() {
+        println!("    {:?} next to {:?}", b, neighbors);
+    }*/
+
+    let mut possible_offsets = vec![];
+    for (b_1, neighbors_1) in beacon_neighbors_1.iter() {
+        for (b_2, neighbors_2) in beacon_neighbors_2.iter() {
+            if neighbors_1 == neighbors_2 {
+                let offset = b_1.dist(b_2).to_pos();
+
+                possible_offsets.push(offset);
+            }
+        }
+    }
+
+    possible_offsets
+}
+
+fn find_best_offset(
+    beacons_1: &[RelativePosition],
+    beacons_2: &[RelativePosition],
+) -> Option<(RelativePosition, i32)> {
+    /*for x_offset in -2000..2001 {
+    println!("    x_offset = {}", x_offset);
+    for y_offset in -2000..2001 {
+        for z_offset in -2000..2001 {
+            let offset = RelativePosition::new(x_offset, y_offset, z_offset);*/
+
+    for offset in find_potential_offsets(beacons_1, beacons_2) {
+        println!("    offset = {:?}", offset);
+        let mut num_matches = 0;
+        for b_1 in beacons_1.iter() {
+            let b_1 = b_1.offsetted(&offset);
+            for b_2 in beacons_2.iter() {
+                let b_2 = b_2.offsetted(&offset);
+
+                if b_1 == b_2 {
+                    num_matches += 1;
+                }
+            }
+        }
+
+        if num_matches >= 12 {
+            return Some((offset, num_matches));
+        }
+    }
+    /*}
+        }
+    }*/
+
+    None
+}
+
+fn find_relations(
+    scanners: &[Scanner],
+) -> HashMap<ScannerId, Vec<(Rotation, Rotation, RelativePosition, ScannerId)>> {
+    let mut relations = HashMap::new();
+
+    println!("Finding relations...");
+    for scanner_1 in scanners.iter() {
+        for scanner_2 in scanners.iter() {
+            println!("Scanners = ({}, {})", scanner_1.id, scanner_2.id);
+            if scanner_1.id == scanner_2.id {
+                continue;
+            }
+
+            for r_1 in Rotation::all().iter() {
+                for r_2 in Rotation::all().iter() {
+                    println!("  Rotations = ({:?}, {:?})", r_1, r_2);
+                    let beacons_1 = scanner_1.rotated_beacons(r_1);
+                    let beacons_2 = scanner_2.rotated_beacons(r_2);
+                    println!("  Applied rotations");
+                    println!("  ({:?} into {:?})", scanner_1.beacons[0], beacons_1[0]);
+
+                    match find_best_offset(&beacons_1, &beacons_2) {
+                        Some((shift, _)) => {
+                            relations
+                                .entry(scanner_1.id)
+                                .or_insert_with(Vec::new)
+                                .push((*r_1, *r_2, shift, scanner_2.id));
+                        }
+                        None => (),
+                    }
+                }
+            }
+        }
+    }
+
+    relations
+}
+
 fn solve_1(scanners: &[Scanner]) -> i32 {
     let scanner_relations = find_relations(scanners);
+
+    println!("scanner_relations = {:?}", scanner_relations);
 
     // TODO: collapse relative possitions onto scanner 0
 
