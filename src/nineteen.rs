@@ -253,59 +253,6 @@ fn read_input() -> Vec<Scanner> {
     scanners
 }
 
-fn find_possible_scanner_relations(
-    scanner_1: &Scanner,
-    scanner_2: &Scanner,
-) -> HashMap<(Rotation, Rotation), i32> {
-    let mut possible_relations = HashMap::new();
-
-    for beacon_1 in scanner_1.beacons.iter() {
-        for beacon_2 in scanner_2.beacons.iter() {
-            let possible_beacon_relations: Vec<(Rotation, Rotation)> = panic!();
-
-            for (r1, r2) in possible_beacon_relations.iter() {
-                *possible_relations.entry((*r1, *r2)).or_insert(0) += 1;
-            }
-        }
-    }
-
-    possible_relations
-}
-
-fn find_relations___old(
-    scanners: &[Scanner],
-) -> HashMap<ScannerId, Vec<(Rotation, Rotation, ScannerId)>> {
-    let mut relations: HashMap<ScannerId, Vec<(Rotation, Rotation, ScannerId)>> = HashMap::new();
-
-    for scanner_1 in scanners.iter() {
-        for scanner_2 in scanners.iter() {
-            let mut possible_relations: Vec<((Rotation, Rotation), i32)> =
-                find_possible_scanner_relations(scanner_1, scanner_2)
-                    .iter()
-                    .map(|(a, b)| (*a, *b))
-                    .collect();
-
-            possible_relations = possible_relations
-                .into_iter()
-                .filter(|((_, _), count)| *count >= 12)
-                .collect();
-
-            if possible_relations.len() > 2 {
-                panic!(); // bad, shouldn't get here, if so then algorithm is insufficient
-            } else if possible_relations.len() == 1 {
-                let ((rotation_1, rotation_2), _) = possible_relations[0];
-                relations.entry(scanner_1.id).or_insert(vec![]).push((
-                    rotation_1,
-                    rotation_2,
-                    scanner_2.id,
-                ));
-            }
-        }
-    }
-
-    relations
-}
-
 fn calc_beacon_neighbors(
     beacons: &HashSet<RelativePosition>,
     num_neighbors: i32,
