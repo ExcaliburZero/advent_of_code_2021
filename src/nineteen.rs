@@ -11,9 +11,9 @@ pub fn part_one() {
 
 pub fn part_two() {
     let scanners = read_input();
-    //let answer = get_life_support_rating(&scanners);
+    let answer = solve_2(&scanners);
 
-    //println!("{}", answer);
+    println!("{}", answer);
 }
 
 type ScannerId = i32;
@@ -150,6 +150,16 @@ impl Sign {
             Sign::Negative => -1,
         }
     }
+
+    fn times(&self, other: &Sign) -> Sign {
+        use Sign::*;
+
+        match (self, other) {
+            (Positive, Positive) => Positive,
+            (Negative, Negative) => Positive,
+            _ => Negative,
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -158,6 +168,33 @@ struct Rotation {
 }
 
 impl Rotation {
+    fn rotated(&self, other: &Rotation) -> Rotation {
+        let mut axes = [(Dir::X, Sign::Positive); 3];
+
+        let mut new_x = self.get_axis_value(&other.axes[0].0);
+        new_x.1 = new_x.1.times(&other.axes[0].1);
+
+        let mut new_y = self.get_axis_value(&other.axes[1].0);
+        new_y.1 = new_y.1.times(&other.axes[1].1);
+
+        let mut new_z = self.get_axis_value(&other.axes[2].0);
+        new_z.1 = new_z.1.times(&other.axes[2].1);
+
+        axes[0] = new_x;
+        axes[1] = new_y;
+        axes[2] = new_z;
+
+        Rotation { axes }
+    }
+
+    fn get_axis_value(&self, axis: &Dir) -> (Dir, Sign) {
+        match axis {
+            Dir::X => self.axes[0],
+            Dir::Y => self.axes[1],
+            Dir::Z => self.axes[2],
+        }
+    }
+
     fn all() -> Vec<Rotation> {
         let signs = vec![Sign::Positive, Sign::Negative];
 
@@ -489,4 +526,72 @@ fn solve_1(scanners: &[Scanner]) -> i32 {
     // TODO: return count of beacons
 
     total_scanner.beacons.len() as i32
+}
+
+fn get_scanner_positions(
+    src: ScannerId,
+    src_pos: &RelativePosition,
+    src_rotation: &Rotation,
+    relations: &HashMap<ScannerId, Vec<(Rotation, RelativePosition, ScannerId)>>,
+    scanner_positions: &mut HashMap<ScannerId, RelativePosition>,
+) {
+    for (rotation, offset, neighbor) in relations[&src].iter() {
+        if scanner_positions.contains_key(neighbor) {
+            continue;
+        }
+
+        let new_pos = src_pos.offsetted(&offset.rotated(src_rotation)); // TODO: what about rotation?
+        scanner_positions.insert(*neighbor, new_pos.clone());
+
+        let neighbor_beacons = get_scanner_positions(
+            *neighbor,
+            &new_pos,
+            &rotation.rotated(src_rotation),
+            relations,
+            scanner_positions,
+        );
+    }
+}
+
+fn find_scanner_positions(
+    scanners: &[Scanner],
+    relations: &HashMap<ScannerId, Vec<(Rotation, RelativePosition, ScannerId)>>,
+) -> HashMap<ScannerId, RelativePosition> {
+    let mut scanner_positions: HashMap<ScannerId, RelativePosition> = HashMap::new();
+    get_scanner_positions(
+        0,
+        &RelativePosition::new(0, 0, 0),
+        &Rotation::all()[0],
+        relations,
+        &mut scanner_positions,
+    );
+
+    scanner_positions
+}
+
+fn solve_2(scanners: &[Scanner]) -> i32 {
+    let scanner_relations = find_relations(scanners);
+
+    let scanner_positions: HashMap<ScannerId, RelativePosition> =
+        find_scanner_positions(scanners, &scanner_relations);
+
+    for (scanner, pos) in scanner_positions.iter() {
+        println!("scanner {:?} at {:?}", scanner, pos);
+    }
+
+    let mut largest_dist = 0;
+    for (id_1, pos_1) in scanner_positions.iter() {
+        for (id_2, pos_2) in scanner_positions.iter() {
+            if id_1 == id_2 {
+                continue;
+            }
+
+            let dist = pos_1.dist(pos_2).manhattan();
+            if dist > largest_dist {
+                largest_dist = dist;
+            }
+        }
+    }
+
+    largest_dist
 }
