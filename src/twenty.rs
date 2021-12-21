@@ -261,16 +261,8 @@ fn read_input() -> (IEAlgorithm, Image) {
 fn solve_1(algorithm: &IEAlgorithm, image: &Image) -> i32 {
     let mut image: Image = image.clone();
 
-    image.print();
-    println!("------------------");
-
     image = algorithm.apply(&image);
-    image.print();
-    println!("------------------");
-
     image = algorithm.apply(&image);
-    image.print();
-    println!("------------------");
 
     image
         .pixels
@@ -282,13 +274,8 @@ fn solve_1(algorithm: &IEAlgorithm, image: &Image) -> i32 {
 fn solve_2(algorithm: &IEAlgorithm, image: &Image) -> i32 {
     let mut image: Image = image.clone();
 
-    image.print();
-    println!("------------------");
-
     for _ in 0..50 {
         image = algorithm.apply(&image);
-        image.print();
-        println!("------------------");
     }
 
     image
