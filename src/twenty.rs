@@ -12,9 +12,9 @@ pub fn part_one() {
 
 pub fn part_two() {
     let (algorithm, image) = read_input();
-    //let answer = get_life_support_rating(&algorithm, &mut image);
+    let answer = solve_2(&algorithm, &image);
 
-    //println!("{}", answer);
+    println!("{}", answer);
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -271,6 +271,25 @@ fn solve_1(algorithm: &IEAlgorithm, image: &Image) -> i32 {
     image = algorithm.apply(&image);
     image.print();
     println!("------------------");
+
+    image
+        .pixels
+        .values()
+        .filter(|c| **c == Color::Filled)
+        .count() as i32
+}
+
+fn solve_2(algorithm: &IEAlgorithm, image: &Image) -> i32 {
+    let mut image: Image = image.clone();
+
+    image.print();
+    println!("------------------");
+
+    for _ in 0..50 {
+        image = algorithm.apply(&image);
+        image.print();
+        println!("------------------");
+    }
 
     image
         .pixels
