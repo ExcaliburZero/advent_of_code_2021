@@ -136,11 +136,6 @@ impl GameState {
 
         self.player_positions.insert(player, new_position);
         *self.scores.entry(player).or_default() += new_position;
-
-        println!(
-            "Player {} rolls {:?} and moves to {} for a total of {}",
-            player, rolls, new_position, self.scores[&player]
-        );
     }
 
     fn advance_prerolled(&mut self, player: PlayerId, rolls: &[i32]) {
@@ -153,11 +148,6 @@ impl GameState {
 
         self.player_positions.insert(player, new_position);
         *self.scores.entry(player).or_default() += new_position;
-
-        /*println!(
-            "Player {} rolls {:?} and moves to {} for a total of {}",
-            player, rolls, new_position, self.scores[&player]
-        );*/
     }
 }
 
@@ -192,8 +182,6 @@ fn solve_1(state: &mut GameState) -> i32 {
         .min_by_key(|(_, score)| *score)
         .unwrap()
         .1;
-
-    println!("losing_player_score: {}", losing_player_score);
 
     losing_player_score * dice.get_num_times_rolled()
 }
@@ -234,13 +222,8 @@ fn calc_records(
 fn solve_2(state: &GameState) -> u64 {
     let state = QuantumnState::new(state, 1);
 
-    /*let mut records: HashMap<PlayerId, u64> = HashMap::new();
-    records.insert(1, 0);
-    records.insert(2, 0);*/
-
     let mut cache: HashMap<QuantumnState, (u64, u64)> = HashMap::new();
     let records = calc_records(&state, &mut cache);
 
-    //*records.values().max().unwrap()
     cmp::max(records.0, records.1)
 }
